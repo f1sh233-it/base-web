@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog App</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .hidden { display: none; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .post { border-bottom: 1px solid #ccc; padding: 10px 0; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Blog App</h1>
+
+    <div id="register" class="form-section">
+        <h2>Register</h2>
+        <form id="register-form">
+            <label>Username: <input type="text" id="register-username"></label><br>
+            <label>Password: <input type="password" id="register-password"></label><br>
+            <button type="submit">Register</button>
+        </form>
+    </div>
+
+    <div id="login" class="form-section">
+        <h2>Login</h2>
+        <form id="login-form">
+            <label>Username: <input type="text" id="login-username"></label><br>
+            <label>Password: <input type="password" id="login-password"></label><br>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+
+    <div id="create-post" class="form-section hidden">
+        <h2>Create New Post</h2>
+        <form id="create-post-form">
+            <label>Title: <input type="text" id="post-title"></label><br>
+            <label>Content: <textarea id="post-content"></textarea></label><br>
+            <button type="submit">Create</button>
+        </form>
+    </div>
+
+    <div id="posts" class="form-section hidden">
+        <h2>Posts</h2>
+        <div id="posts-list"></div>
+    </div>
+
+    <div id="post-detail" class="form-section hidden">
+        <h2 id="post-detail-title"></h2>
+        <p id="post-detail-content"></p>
+        <p id="post-detail-author"></p>
+    </div>
+</div>
+
+<script>
+    const apiUrl = '/api/v1';
+
+    document.getElementById('register-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const username = document.getElementById('register-username').value;
+        const password = document.getElementById('register-password').value;
+        const response = await fetch(`${apiUrl}/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const data = await response.json();
+        console.log(data);
+    });
+
+    document.getElementById('login-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const username = document.getElementById('login-username').value;
+        const password = document.getElementById('login-password').value;
+        const response = await fetch(`${apiUrl}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const data = await response.json();
+        console.log(data);
+        if (response.ok) {
+            document.getElementById('create-post').classList.remove('hidden');
+            document.getElementById('posts').classList.remove('hidden');
+            loadPosts();
+        }
+    });
+
+    document.getElementById('create-post-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const title = document.getElementById('post-title').value;
+        const content = document.getElementById('post-content').value;
+        const token = localStorage.getItem('authToken');
+
+        const response = await fetch(`${apiUrl}/posts`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ title, content })
+        });
+        const data = await response.json();
+        console.log(data);
+        loadPosts();
+    });
+
+
+    document.getElementById('create-post-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const title = document.getElementById('post-title').value;
+        const content = document.getElementById('post-content').value;
+        const response = await fetch(`${apiUrl}/posts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, content })
+        });
+        const data = await response.json();
+        console.log(data);
+        loadPosts();
+    });
+
+    async function loadPosts() {
+        const response = await fetch(`${apiUrl}/posts`);
+        const posts = await response.json();
+        const postsList = document.getElementById('posts-list');
+        postsList.innerHTML = '';
+        posts.forEach(post => {
+            const postElement = document.createElement('div');
+            postElement.className = 'post';
+            postElement.innerHTML = `<h3>${post.title}</h3><p>${post.content}</p><button onclick="viewPost(${post.ID})">View</button>`;
+            postsList.appendChild(postElement);
+        });
+    }
+
+    async function viewPost(postId) {
+        const response = await fetch(`${apiUrl}/posts/${postId}`);
+        const post = await response.json();
+        document.getElementById('post-detail-title').textContent = post.title;
+        document.getElementById('post-detail-content').textContent = post.content;
+        document.getElementById('post-detail-author').textContent = `Author: ${post.user.username}`;
+        document.getElementById('post-detail').classList.remove('hidden');
+    }
+</script>
+</body>
+</html>
